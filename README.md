@@ -5,9 +5,9 @@ Please note that the final system design is included in the file "FinalSystem.py
 Inputs:
   1. Battery Storage Design 
   
-  -Max power capacity (both charge and discharge in kW)
+  -Max power capacity or energy transport rates for battery (both charge and discharge in kW)
   
-  -Discharge energy capacity (in kWh)
+  -Discharge or storage energy capacity for battery (in kWh)
   
   -AC-AC Roundtrip efficiency 
   
@@ -22,7 +22,7 @@ Inputs:
   
  Outputs:
  
-  -CSV file with power output (kW) & State of Energy (kWh)
+  -CSV file with power output (kW) & State of Energy SOC(kWh)
   
   -CSV file with total annual revenue generation, total annual charging cost, and total annual throughput 
   
@@ -37,7 +37,7 @@ Inputs:
 1. The system SHALL optimize the battery storage dispatch (with an optimization time horizon of at
 least 1 day) for the day ahead energy market
 
-○ The battery storage’s State of Energy SHALL be continuous between optimization time
+○ The battery storage’s State of Energy (SOC: state of charge) SHALL be continuous between optimization time
 horizon boundaries
 
 2. The system SHALL accept the following as inputs for the battery storage asset:
@@ -46,7 +46,7 @@ horizon boundaries
 
 ○ Max charge power capacity (kW)
 
-○ Discharge energy capacity (kWh)
+○ Discharge energy capacity (Battery Storage Capacity: kWh)
 
 ○ AC-AC Round-trip efficiency (%)
 
@@ -89,7 +89,7 @@ inputs and assumptions:
 
 ■ Max power capacity (both charge and discharge) = 100 kW
 
-■ Discharge energy capacity = 200 kWh
+■ Discharge energy capacity (Battery storage capacity) = 200 kWh
 
 ■ AC-AC round trip efficiency = 85%
 

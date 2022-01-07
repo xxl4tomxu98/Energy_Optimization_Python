@@ -1,6 +1,5 @@
-
 from glob import glob
-import logging
+import logging, os
 import pandas as pd
 import numpy as np
 import math
@@ -27,7 +26,8 @@ from keras.models import load_model
 #INPUTS: names of csv files, name of zone being examined
 #read in all csv files at once from directory
 #feed in your filenames here for HOURLY LBMP
-filenames = glob('2017010*.csv')
+path = "./2017_NYISO_LBMPs/20170101damlbmp_zone_csv"
+filenames = glob(os.path.join(path, "201701*.csv"))
 #get list of dataframes for each day
 dataframes= [pd.read_csv(f, header= 0, index_col=0) for f in filenames]
 #input ZONE name here
@@ -35,28 +35,19 @@ zone = 'N.Y.C.'
 
 num = len(dataframes)
 
-i = 0
-for x in range(1,num+1):
-    df1 = dataframes[i]
-    #new = df1['LBMP ($/MWHr)']
-    #dataframes[i] = new
-    #new.column = ['LBMP ($/MWHr)']
-    if i ==0:
-        df = df1['LBMP ($/MWHr)']
-    else:
-        df = df.append(df1)
-    i += 1
 
-
+df1 = [frame['LBMP ($/MWHr)'] for frame in dataframes]
+df = pd.concat(df1)
+    
 
 #read in our dataframe for individual stock
-df = df['LBMP ($/MWHr)']
-df = pd.DataFrame(data= df)
+# df = df['LBMP ($/MWHr)']
+# df = pd.DataFrame(data= df)
 df.columns = ['LBMP ($/MWHr)']
 #setting our target variables
 target1 = ['LBMP ($/MWHr)']  # this will have to be changed as our inputs change
 lastIndex = len(df['LBMP ($/MWHr)'])  # get last index of dataframe
-numForecastDays = 24  # variable for number of days we want to forecast out
+numForecastDays = 24  # variable for number of hours we want to forecast out
 forecastDays_Index = lastIndex - numForecastDays  # index to take days we want to forecast out off of datafram
 
 #######################################
