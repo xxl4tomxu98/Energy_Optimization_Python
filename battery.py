@@ -4,16 +4,16 @@ from pulp import LpVariable, LpProblem, LpStatus, lpSum, value
 # Load in data
 f = open('7days_total_5mn.csv')  # household load (W)
 f.readline()  # Discard header
-load = [float(l) / 1000 for l in f.readlines()]  # (kW)
-f = open('7days_solar_5mn.csv')  # global insolation (Wm-2)
+load = [float(l) / 1000 for l in f.readlines()]  # (kW) load prfile
+f = open('7days_solar_5mn.csv')  # global insolation or intensity of PV sunlight(Wm-2)
 f.readline()  # Discard header
-glob = [float(l) / 1000 for l in f.readlines()]  # (kWm-2)
+glob = [float(l) / 1000 for l in f.readlines()]  # (kWm-2) PV gen profile
 
 assert(len(load) == len(glob))
 
 # PV parameters
 ###############
-pv_size = 2  # nominal PV power (kW)
+pv_size = 2  # nominal PV power (m2)
 
 # Power profiles
 ################
@@ -35,7 +35,8 @@ sell = 8.0  # sell price (c/kWh)
 
 # Battery parameters
 ####################
-Emax = 7  # battery capacity (kWh)
+#Emax = 7  # battery capacity (kWh)
+Emax = LpVariable('Emax', 0, None)
 eff = 0.85  # combined battery and inverter efficiency
 pmax = (2 / 7) * Emax  # battery max power (kW)
 price = (3000.0 + 1000.0) / 7  # battery, installation, BOS costs estm ($/kWh)
