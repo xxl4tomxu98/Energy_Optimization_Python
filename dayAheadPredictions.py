@@ -48,10 +48,10 @@ df.columns = ['LBMP ($/MWHr)']
 target1 = ['LBMP ($/MWHr)']  # this will have to be changed as our inputs change
 lastIndex = len(df['LBMP ($/MWHr)'])  # get last index of dataframe
 numForecastDays = 24  # variable for number of hours we want to forecast out
-forecastDays_Index = lastIndex - numForecastDays  # index to take days we want to forecast out off of datafram
+forecastDays_Index = lastIndex - numForecastDays  # index to take hours we want to forecast out off of datafram
 
 #######################################
-# Specify number of lag days, number of features and number of days we are forecasting out
+# Specify number of lag days, number of features and number of hours we are forecasting out
 n_days = 1
 n_features = len(df.columns)  # got from varNo in view of reframed Dataframe
 forecast_out = numForecastDays

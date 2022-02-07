@@ -74,21 +74,20 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	return r_df
 
 def neural_net_predictions(all_X, all_y, EPOCHS=10):
-	import tensorflow as tf
-	from tensorflow.keras import layers
+	from keras.models import Sequential
+	from keras.layers import Dense
 	# slice ndarray to only leave last year(8760 hrs) as testing set
-	X_train, y_train = all_X[:-8760], all_y[:-8760]
-
-	model = tf.keras.Sequential([
-		layers.Dense(all_X.shape[1], activation=tf.nn.relu, input_shape=[len(X_train.keys())]),
-		layers.Dense(all_X.shape[1], activation=tf.nn.relu),
-		layers.Dense(all_X.shape[1], activation=tf.nn.relu),
-		layers.Dense(all_X.shape[1], activation=tf.nn.relu),
-		layers.Dense(all_X.shape[1], activation=tf.nn.relu),
-		layers.Dense(1)
-	  ])
-
-	optimizer = tf.keras.optimizers.RMSprop(0.0001)
+	X_train, y_train = all_X[:-8760, :], all_y[:-8760]
+	input_shape = X_train.shape[1] 
+	model = Sequential()
+	model.add(Dense(input_shape, input_dim=input_shape, activation='relu'))
+	model.add(Dense(input_shape, activation='relu'))
+	model.add(Dense(input_shape, activation='relu'))
+	model.add(Dense(input_shape, activation='relu'))
+	model.add(Dense(input_shape, activation='relu'))
+	model.add(Dense(1, activation='sigmoid'))
+	
+	optimizer = keras.optimizers.RMSprop(0.0001)
 
 	model.compile(
 		loss="mean_squared_error",
@@ -96,7 +95,7 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 		metrics=["mean_absolute_error", "mean_squared_error"],
 	)
 
-	early_stop = tf.keras.callbacks.EarlyStopping(monitor="mean_absolute_error", patience=20)
+	early_stop = keras.callbacks.EarlyStopping(monitor="mean_absolute_error", patience=20)
 
 	history = model.fit(
 		X_train,
