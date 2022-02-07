@@ -13,6 +13,10 @@ from scipy.stats import zscore
 with open('holidays.pickle', 'rb') as f:
 	nerc6 = pickle.load(f)
 
+def MAPE(predictions, answers):
+		assert len(predictions) == len(answers)
+		return sum([abs(x-y)/(y+1e-5) for x, y in zip(predictions, answers)])/len(answers)*100 
+
 def isHoliday(holiday, df):
 	# New years, memorial, independence, labor day, Thanksgiving, Christmas
 	m1 = None
@@ -76,8 +80,10 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 def neural_net_predictions(all_X, all_y, EPOCHS=10):
 	from keras.models import Sequential
 	from keras.layers import Dense
+	from tensorflow import keras
 	# slice ndarray to only leave last year(8760 hrs) as testing set
 	X_train, y_train = all_X[:-8760, :], all_y[:-8760]
+	X_test, y_test = all_X[-8760:, :], all_y[-8760:]
 	input_shape = X_train.shape[1] 
 	model = Sequential()
 	model.add(Dense(input_shape, input_dim=input_shape, activation='relu'))
@@ -85,13 +91,13 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 	model.add(Dense(input_shape, activation='relu'))
 	model.add(Dense(input_shape, activation='relu'))
 	model.add(Dense(input_shape, activation='relu'))
-	model.add(Dense(1, activation='sigmoid'))
+	model.add(Dense(1))
 	
-	optimizer = keras.optimizers.RMSprop(0.0001)
+	#optimizer = keras.optimizers.RMSprop(0.0001)
 
 	model.compile(
 		loss="mean_squared_error",
-		optimizer=optimizer,
+		optimizer="adam",
 		metrics=["mean_absolute_error", "mean_squared_error"],
 	)
 
@@ -105,15 +111,11 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 		callbacks=[early_stop],
 	)
 
-	def MAPE(predictions, answers):
-		assert len(predictions) == len(answers)
-		return sum([abs(x-y)/(y+1e-5) for x, y in zip(predictions, answers)])/len(answers)*100   
-	
-	predictions = [float(f) for f in model.predict(all_X[-8760:])]
-	train = [float(f) for f in model.predict(all_X[:-8760])]
+	predictions = [float(f) for f in model.predict(X_test)]
+	train = [float(f) for f in model.predict(X_train)]
 	accuracy = {
-		'test': MAPE(predictions, all_y[-8760:]),
-		'train': MAPE(train, all_y[:-8760])
+		'test': MAPE(predictions, y_test.to_list()),
+		'train': MAPE(train, y_train.to_list())
 	}
 	
-	return [float(f) for f in model.predict(all_X[-8760:])], accuracy
+	return predictions, accuracy
