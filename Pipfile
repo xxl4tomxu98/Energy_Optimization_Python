@@ -6,6 +6,12 @@ name = "pypi"
 [packages]
 pulp = "*"
 matplotlib = "*"
+ipykernel = "*"
+pandas = "*"
+numpy = "*"
+scipy = "*"
+mpld3 = "*"
+datetime = "*"
 
 [dev-packages]
 
