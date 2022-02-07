@@ -32,33 +32,23 @@ def add_noise(m, std):
 
 def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	"""
-	Turn a dataframe of datetime and load data into a dataframe useful for
-	machine learning. Normalize values.
+	Turn a dataframe of datetime and load data into a dataframe r_df 
+	useful for machine learning. Normalize values.
 	"""
-	def _isHoliday(holiday, df):
-		m1 = None
-		if holiday == "New Year's Day":
-			m1 = (df["dates"].dt.month == 1) & (df["dates"].dt.day == 1)
-		if holiday == "Independence Day":
-			m1 = (df["dates"].dt.month == 7) & (df["dates"].dt.day == 4)
-		if holiday == "Christmas Day":
-			m1 = (df["dates"].dt.month == 12) & (df["dates"].dt.day == 25)
-		m1 = df["dates"].dt.date.isin(nerc6[holiday]) if m1 is None else m1
-		m2 = df["dates"].dt.date.isin(nerc6.get(holiday + " (Observed)", []))
-		return m1 | m2
 	
 	if 'dates' not in df.columns:
 		df['dates'] = df.apply(lambda x: dt(int(x['year']), int(x['month']), int(x['day']), int(x['hour'])), axis=1)
 
 	r_df = pd.DataFrame()
 	
-	# LOAD
+	# LOAD and Normalize, column load_prev_n represents 24 hr before load
 	r_df["load_n"] = zscore(df["load"])
 	r_df["load_prev_n"] = r_df["load_n"].shift(hours_prior)
 	r_df["load_prev_n"].bfill(inplace=True)
 	
 	# LOAD PREV
 	def _chunks(l, n):
+		#slice df rows by each n periods (24 hours in this case)
 		return [l[i : i + n] for i in range(0, len(l), n)]
 	n = np.array([val for val in _chunks(list(r_df["load_n"]), 24) for _ in range(24)])
 	l = ["l" + str(i) for i in range(24)]
@@ -74,7 +64,7 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.dayofweek, prefix='day')], axis=1)
 	r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.month, prefix='month')], axis=1)
 	for holiday in ["New Year's Day", "Memorial Day", "Independence Day", "Labor Day", "Thanksgiving", "Christmas Day"]:
-		r_df[holiday] = _isHoliday(holiday, df)
+		r_df[holiday] = isHoliday(holiday, df)
 
 	# TEMP
 	temp_noise = df['tempc'] + np.random.normal(0, noise, df.shape[0])
