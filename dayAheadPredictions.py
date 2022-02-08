@@ -25,7 +25,7 @@ from keras.models import load_model
 
 #INPUTS: names of csv files, name of zone being examined
 #read in all csv files at once from directory
-#feed in your filenames here for HOURLY LBMP
+#feed in your filenames here for HOURLY LBMP for January 2017
 path = "./2017_NYISO_LBMPs/20170101damlbmp_zone_csv"
 filenames = glob(os.path.join(path, "201701*.csv"))
 #get list of dataframes for each day
@@ -35,7 +35,7 @@ zone = 'N.Y.C.'
 
 num = len(dataframes)
 
-
+# concat each Jan day dfs together
 df1 = [frame['LBMP ($/MWHr)'] for frame in dataframes]
 df = pd.concat(df1)
     

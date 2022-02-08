@@ -13,9 +13,11 @@ from scipy.stats import zscore
 with open('holidays.pickle', 'rb') as f:
 	nerc6 = pickle.load(f)
 
+
 def MAPE(predictions, answers):
 		assert len(predictions) == len(answers)
 		return sum([abs(x-y)/(y+1e-5) for x, y in zip(predictions, answers)])/len(answers)*100 
+
 
 def isHoliday(holiday, df):
 	# New years, memorial, independence, labor day, Thanksgiving, Christmas
@@ -30,9 +32,11 @@ def isHoliday(holiday, df):
 	m2 = df["dates"].dt.date.isin(nerc6.get(holiday + " (Observed)", []))
 	return m1 | m2
 
+
 def add_noise(m, std):
 	noise = np.random.normal(0, std, m.shape[0])
 	return m + noise
+
 
 def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	"""
@@ -77,6 +81,7 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 
 	return r_df
 
+
 def neural_net_predictions(all_X, all_y, EPOCHS=10):
 	from keras.models import Sequential
 	from keras.layers import Dense
@@ -93,11 +98,11 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 	model.add(Dense(input_shape, activation='relu'))
 	model.add(Dense(1))
 	
-	#optimizer = keras.optimizers.RMSprop(0.0001)
+	optimizer = keras.optimizers.RMSprop(0.0001)
 
 	model.compile(
 		loss="mean_squared_error",
-		optimizer="adam",
+		optimizer=optimizer,
 		metrics=["mean_absolute_error", "mean_squared_error"],
 	)
 
