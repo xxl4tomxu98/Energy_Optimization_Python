@@ -83,8 +83,8 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 
 
 def neural_net_predictions(all_X, all_y, EPOCHS=10):
-	from keras.models import Sequential
-	from keras.layers import Dense
+	from tensorflow.keras.models import Sequential
+	from tensorflow.keras.layers import Dense
 	from tensorflow import keras
 	# slice ndarray to only leave last year(8760 hrs) as testing set
 	X_train, y_train = all_X[:-8760, :], all_y[:-8760]
@@ -119,8 +119,8 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 	predictions = [float(f) for f in model.predict(X_test)]
 	train = [float(f) for f in model.predict(X_train)]
 	accuracy = {
-		'test': MAPE(predictions, y_test.to_list()),
-		'train': MAPE(train, y_train.to_list())
+		'test': MAPE(predictions, y_test),
+		'train': MAPE(train, y_train)
 	}
 	
 	return predictions, accuracy
