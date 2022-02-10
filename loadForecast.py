@@ -82,7 +82,7 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	return r_df
 
 
-def neural_net_predictions(all_X, all_y, EPOCHS=10):
+def hour_ahead_predictions(all_X, all_y, EPOCHS=10):
 	from tensorflow.keras.models import Sequential, load_model
 	from tensorflow.keras.layers import Dense
 	from tensorflow import keras
@@ -112,7 +112,7 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 		X_train,
 		y_train,
 		epochs=EPOCHS,
-		verbose=0,
+		verbose=1,
 		callbacks=[early_stop],
 	)
 
@@ -123,7 +123,6 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 		'train': MAPE(train, y_train)
 	}
 	#save the model
-	model.save('./models/hour_ahead_forecastor.h5')
-	model = load_model('./models/hour_ahead_forecastor.h5')
+	model.save('./models/hour_ahead_forecastor.h5')	
 
 	return predictions, accuracy
