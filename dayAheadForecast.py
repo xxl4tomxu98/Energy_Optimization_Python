@@ -1,12 +1,18 @@
-"""
-Neural net implementation of electric load forecasting.
-"""
+'''Traditional methods for time series forecasting like ARIMA has its limitation
+as it can only be used for univariate data and one step forecasting. VAR(vector
+autoregression) model can do multivariate regression, or, it is observed in 
+various studies that deep learning models like ANN(MLP) or RNN(LSTM) outperform
+traditional forecasting methods on multivariate time series data.'''
 
 import pickle
 import numpy as np
 import pandas as pd
 from datetime import datetime as dt
 from scipy.stats import zscore
+from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.layers import Dense, Flatten
+from tensorflow import keras
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
 
 # NERC6 holidays with inconsistent dates. Created with python holidays package
 # years 1990 - 2024
@@ -14,9 +20,10 @@ with open('holidays.pickle', 'rb') as f:
 	nerc6 = pickle.load(f)
 
 
-def MAPE(predictions, answers):
-		assert len(predictions) == len(answers)
-		return sum([abs(x-y)/(y+1e-5) for x, y in zip(predictions, answers)])/len(answers)*100 
+def MAPE(predicted, true):
+    # mean absolute percent error
+    assert len(predicted) == len(true)
+    return sum([abs(x-y)/(y+1e-5) for x, y in zip(predicted, true)])/len(true)*100
 
 
 def isHoliday(holiday, df):
@@ -39,47 +46,52 @@ def add_noise(m, std):
 
 
 def makeUsefulDf(df, noise=2.5, hours_prior=24):
-	"""
+    """
 	Turn a dataframe of datetime and load data into a dataframe r_df 
-	useful for machine learning. Normalize values.
-	"""
-	
-	if 'dates' not in df.columns:
-		df['dates'] = df.apply(lambda x: dt(int(x['year']), int(x['month']), int(x['day']), int(x['hour'])), axis=1)
+    useful for machine learning. Normalize values.
+    """	
+    if 'dates' not in df.columns:
+        # aggregate time columns togther into a datetime variable for easy access
+	    df['dates'] = df.apply(lambda x: dt(int(x['year']), int(x['month']),
+                                int(x['day']), int(x['hour'])), axis=1)
 
-	r_df = pd.DataFrame()
+    r_df = pd.DataFrame()
 	
 	# LOAD and Normalize, column load_prev_n represents 24 hr before load
-	r_df["load_n"] = zscore(df["load"])
-	r_df["load_prev_n"] = r_df["load_n"].shift(hours_prior)
-	r_df["load_prev_n"].bfill(inplace=True)
-	
-	# LOAD PREV
-	def _chunks(l, n):
-		#slice df rows by each n periods (24 hours in this case)
-		return [l[i : i + n] for i in range(0, len(l), n)]
-	n = np.array([val for val in _chunks(list(r_df["load_n"]), 24) for _ in range(24)])
-	l = ["l" + str(i) for i in range(24)]
-	for i, s in enumerate(l):
-		r_df[s] = n[:, i]
-		r_df[s] = r_df[s].shift(hours_prior)
-		r_df[s] = r_df[s].bfill()
-	r_df.drop(['load_n'], axis=1, inplace=True)
-	
-	# DATE
-	r_df["years_n"] = zscore(df["dates"].dt.year)
-	r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.hour, prefix='hour')], axis=1)
-	r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.dayofweek, prefix='day')], axis=1)
-	r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.month, prefix='month')], axis=1)
-	for holiday in ["New Year's Day", "Memorial Day", "Independence Day", "Labor Day", "Thanksgiving", "Christmas Day"]:
-		r_df[holiday] = isHoliday(holiday, df)
+    r_df["load_n"] = zscore(df["load"])
+    r_df["load_prev_n"] = r_df["load_n"].shift(hours_prior)
+    r_df["load_prev_n"].bfill(inplace=True)
 
-	# TEMP
-	temp_noise = df['tempc'] + np.random.normal(0, noise, df.shape[0])
-	r_df["temp_n"] = zscore(temp_noise)
-	r_df['temp_n^2'] = zscore([x*x for x in temp_noise])
+    # LOAD PREV
+    def _chunks(l, n):
+		#slice df rows by each n periods
+	    return [l[i : i + n] for i in range(0, len(l), n)]
+    n = np.array([val for val in _chunks(list(r_df["load_n"]), hours_prior)
+                 for _ in range(hours_prior)])
+    l = ["l" + str(i) for i in range(hours_prior)]
+    for i, s in enumerate(l):
+	    r_df[s] = n[:, i]
+	    r_df[s] = r_df[s].shift(hours_prior)
+	    r_df[s] = r_df[s].bfill()
+    r_df.drop(['load_n'], axis=1, inplace=True)
+	
+    # DATE
+    r_df["years_n"] = zscore(df["dates"].dt.year)
+    r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.hour, prefix='hour')], axis=1)
+    r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.dayofweek, prefix='day')], axis=1)
+    r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.month, prefix='month')], axis=1)
 
-	return r_df
+    official_holidays = ["New Year's Day", "Memorial Day", "Independence Day", "Labor Day",
+                         "Thanksgiving", "Christmas Day"]
+    for holiday in official_holidays:
+	    r_df[holiday] = isHoliday(holiday, df)
+
+    # randomize TEMP to accomodate normal noisy fluctuations
+    temp_noise = df['tempc'] + np.random.normal(0, noise, df.shape[0])
+    r_df["temp_n"] = zscore(temp_noise)
+    r_df['temp_n^2'] = zscore([x*x for x in temp_noise])
+
+    return r_df
 
 
 def data_transform(data, window, var='x'):
@@ -100,57 +112,7 @@ def data_transform(data, window, var='x'):
     return t
 
 
-def hour_ahead_predictions(all_X, all_y, EPOCHS=10):
-	from tensorflow.keras.models import Sequential, load_model
-	from tensorflow.keras.layers import Dense
-	from tensorflow import keras
-	# slice ndarray to only leave last year(8760 hrs) as testing set
-	X_train, y_train = all_X[:-8760, :], all_y[:-8760]
-	X_test, y_test = all_X[-8760:, :], all_y[-8760:]
-	input_shape = X_train.shape[1] 
-	model = Sequential()
-	model.add(Dense(input_shape, input_dim=input_shape, activation='relu'))
-	model.add(Dense(input_shape, activation='relu'))
-	model.add(Dense(input_shape, activation='relu'))
-	model.add(Dense(input_shape, activation='relu'))
-	model.add(Dense(input_shape, activation='relu'))
-	model.add(Dense(1))
-	
-	optimizer = keras.optimizers.RMSprop(0.0001)
-
-	model.compile(
-		loss="mean_squared_error",
-		optimizer=optimizer,
-		metrics=["mean_absolute_error", "mean_squared_error"],
-	)
-
-	early_stop = keras.callbacks.EarlyStopping(monitor="mean_absolute_error", patience=20)
-
-	history = model.fit(
-		X_train,
-		y_train,
-		epochs=EPOCHS,
-		verbose=1,
-		callbacks=[early_stop],
-	)
-
-	predictions = [float(f) for f in model.predict(X_test)]
-	train = [float(f) for f in model.predict(X_train)]
-	accuracy = {
-		'test': MAPE(predictions, y_test),
-		'train': MAPE(train, y_train)
-	}
-	#save the model
-	model.save('./models/hour_ahead_forecastor.h5')	
-
-	return predictions, accuracy
-
-
-def day_ahead_predictions(all_X, all_y, window, EPOCHS=10):
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense, Flatten
-    from tensorflow import keras
-    from keras.callbacks import ReduceLROnPlateau, EarlyStopping	
+def day_ahead_predictions(all_X, all_y, window, EPOCHS=10):	
     # slice ndarray to only leave last year(8760 hrs) as testing set
     X_train, y_train = all_X[:-8760, :, :], all_y[:-8760, :]
     X_test, y_test = all_X[-8760:, :, :], all_y[-8760:, :]
@@ -172,8 +134,8 @@ def day_ahead_predictions(all_X, all_y, window, EPOCHS=10):
     nadam = keras.optimizers.Nadam(learning_rate=0.002, beta_1=0.9, beta_2=0.999)
     model.compile(optimizer=nadam, loss='mape', metrics=['mae', 'mape'])	
 
-    callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=5, cooldown=0),
-                 EarlyStopping(monitor='val_acc', min_delta=1e-4, patience=5)]
+    callbacks = [ReduceLROnPlateau(monitor='mape', patience=5, cooldown=0),
+                 EarlyStopping(monitor='accuracy', min_delta=1e-4, patience=5)]
     history = model.fit(
         X_train,
         y_train,
@@ -203,5 +165,7 @@ def day_ahead_predictions(all_X, all_y, window, EPOCHS=10):
     }
 	# save the model
     model.save('./models/day_ahead_forecastor.h5')
-    
+    # load back model
+    model = load_model('./models/day_ahead_forecastor.h5')
+
     return predictions, accuracy
