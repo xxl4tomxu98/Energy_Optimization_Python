@@ -7,9 +7,11 @@ permalink: /simple-load-forecasting
 
 ![header](../img/headers/simple-load-forecasting.png)
 
-# Using neural nets to predict tomorrow’s electric consumption
-## The smallest error can lose utilities thousands of dollars in a single day. Neural networks can help make sure that doesn’t happen.
-*March 7, 2019*
+## Using neural nets to predict tomorrow’s electric consumption
+
+## The smallest error can lose utilities thousands of dollars in a single day. Neural networks can help make sure that doesn’t happen
+
+`March 7, 2019`
 
 Electricity distributors stand to save hundreds of thousands of dollars by decreasing their peak demand charge. Some have tried to discharge batteries or turn off customers’ water heaters or air conditioners at peak hours to reduce their demand. But these efforts are only as effective as the utility’s ability to predict the day’s energy consumption.
 
