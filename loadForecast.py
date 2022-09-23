@@ -82,8 +82,26 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	return r_df
 
 
-def neural_net_predictions(all_X, all_y, EPOCHS=10):
-	from tensorflow.keras.models import Sequential
+def data_transform(data, window, var='x'):
+    m = []  
+    for i in range(data.shape[0]-window):  # starting index of a day sample
+        m.append(data[i:i+window].tolist())
+    if var == 'x':
+        t = np.zeros((len(m), len(m[0]), len(m[0][0])))
+        for i, x in enumerate(m):  # x is each day sample
+            for j, y in enumerate(x):  # y is each hour sample
+                for k, z in enumerate(y):  # z is each feature
+                    t[i, j, k] = z
+    else:
+        t = np.zeros((len(m), len(m[0])))
+        for i, x in enumerate(m):
+            for j, y in enumerate(x):
+                t[i, j] = y
+    return t
+
+
+def hour_ahead_predictions(all_X, all_y, EPOCHS=10):
+	from tensorflow.keras.models import Sequential, load_model
 	from tensorflow.keras.layers import Dense
 	from tensorflow import keras
 	# slice ndarray to only leave last year(8760 hrs) as testing set
@@ -112,7 +130,7 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 		X_train,
 		y_train,
 		epochs=EPOCHS,
-		verbose=0,
+		verbose=1,
 		callbacks=[early_stop],
 	)
 
@@ -122,5 +140,68 @@ def neural_net_predictions(all_X, all_y, EPOCHS=10):
 		'test': MAPE(predictions, y_test),
 		'train': MAPE(train, y_train)
 	}
-	
+	#save the model
+	model.save('./models/hour_ahead_forecastor.h5')	
+
 	return predictions, accuracy
+
+
+def day_ahead_predictions(all_X, all_y, window, EPOCHS=10):
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Flatten
+    from tensorflow import keras
+    from keras.callbacks import ReduceLROnPlateau, EarlyStopping	
+    # slice ndarray to only leave last year(8760 hrs) as testing set
+    X_train, y_train = all_X[:-8760, :, :], all_y[:-8760, :]
+    X_test, y_test = all_X[-8760:, :, :], all_y[-8760:, :]
+    # build ANN(MLP) model, instead of calculating a single hour, combine 
+    # all weights into one flat, fully-connected dense layer (half of window
+    # * features number of nodes). That layer is then fully connected to a 
+    # period vector for period ahead forecast.
+    s = all_X.shape[2]
+    model = Sequential()
+    model.add(Dense(s, activation="relu", input_shape=(window, s)))
+    model.add(Dense(s, activation="relu"))
+    model.add(Dense(s, activation="relu"))
+    model.add(Dense(s, activation="relu"))
+    model.add(Dense(s, activation="relu"))
+    model.add(Flatten())
+    model.add(Dense(s*window//2, activation="relu"))
+    model.add(Dense(window))
+    # define customized optimizer
+    nadam = keras.optimizers.Nadam(learning_rate=0.002, beta_1=0.9, beta_2=0.999)
+    model.compile(optimizer=nadam, loss='mape', metrics=['mae', 'mape'])	
+
+    callbacks = [ReduceLROnPlateau(monitor='val_loss', patience=5, cooldown=0),
+                 EarlyStopping(monitor='val_acc', min_delta=1e-4, patience=5)]
+    history = model.fit(
+        X_train,
+        y_train,
+        epochs=EPOCHS,
+        verbose=1,
+        callbacks=callbacks,
+    )
+
+    predictions = np.array([])
+    for row in X_test:
+        X_test_row = row.reshape(1, window, s)
+        yhat = model.predict(X_test_row, verbose=0)
+        predictions = np.append(predictions, yhat)
+
+    train = np.array([])
+    for row in X_train:
+        X_train_row = row.reshape(1, window, s)
+        ytrainhat = model.predict(X_train_row, verbose=0)
+        train = np.append(train, ytrainhat)
+
+    y_test_flatten = y_test.flatten()
+    y_train_flatten = y_train.flatten()
+
+    accuracy = {
+        'test': MAPE(predictions, y_test_flatten),
+        'train': MAPE(train, y_train_flatten)
+    }
+	# save the model
+    model.save('./models/day_ahead_forecastor.h5')
+    
+    return predictions, accuracy
