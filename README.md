@@ -1,8 +1,7 @@
 # Power-Modeling-Tool
 
-Purpose: Analysis of revenue generation from battery storage system that is performing energy arbitrage by participating in NYISO day-ahead energy market.
+Purpose: Analysis of revenue generation from battery storage system that is performing energy arbitrage by participating in NYISO day-ahead energy market. Please note that the final system design is included in the file "FinalSystem.py".
 
-Please note that the final system design is included in the file "FinalSystem.py".
 Inputs:
 
 ## Battery Storage Design

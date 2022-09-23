@@ -110,4 +110,4 @@ We were unable to develop a proper RNN that outcompeted our model, but that does
 
 #### Same approach can be used for other genric ML models which are employed to predict time series
 
-![grab TS components for Tree based models]("https://towardsdatascience.com/approaching-time-series-with-a-tree-based-model-87c6d1fb6603")
+![grab TS components for Tree based models](https://towardsdatascience.com/approaching-time-series-with-a-tree-based-model-87c6d1fb6603)
