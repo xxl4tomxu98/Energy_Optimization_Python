@@ -7,11 +7,11 @@ permalink: /day-long-load-forecasting
 
 ![header](../img/headers/day-long-load-forecasting.png)
 
-# Predict daily electric consumption with neural networks.
+## Predict daily electric consumption with neural networks
 
-## How a simple three-dimensional structure reduces error, outcompetes more complex models, and doubles savings.
+## How a simple three-dimensional structure reduces error, outcompetes more complex models, and doubles savings
 
-*January 23, 2020*
+`January 23, 2020`
 
 In early 2019, [we built]({{ site.baseurl }}/simple-load-forecasting.html) a deep learning model that predicted electric consumption on an hour-by-hour basis. Because the smallest error can cost an electric utility tens of thousands of dollars, we explored a number of more complex forecasters. In the end we discovered that a simple day-long approach is the most effective, often cutting error in half.
 
@@ -98,13 +98,12 @@ The most significant issue is not only the MAPE, but the spread of errors (repre
 
 These models presume that the user would predict the following day's electric consumption at 11pm. So "0 Hours ahead" in the chart below would mean "12AM", "30 Hours ahead" is akin to "5AM in two-days", etc.
 
-
 #### Captured savings
 
 And most importantly, the money saved! A 1 percentage point decrease in error may seem insignificant, but in 2018, this would have doubled Texas's peak shaving savings.
 
 Assuming batteries with a 700kW charge and 500kW rating, we can calculate how much peak shaving could occur with perfect forecasting. You can capture 36 percent of optimal with our hourly neural network model. And by substituting the new model (no fancy [optimization under uncertainty analysis]({{ site.baseurl }}/calculate-uncertainty.html) included), we are able to capture 64 percent, almost doubling our savings!
 
-#### Suggestions welcome!
+#### Suggestions welcome
 
 We were unable to develop a proper RNN that outcompeted our model, but that doesn't mean that one doesn't exist. The smallest increase in accuracy can profoundly help electric utilities, so if you think there's a structure we haven't considered, feel free to reach out!
