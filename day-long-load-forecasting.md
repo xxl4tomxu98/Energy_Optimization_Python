@@ -107,3 +107,7 @@ Assuming batteries with a 700kW charge and 500kW rating, we can calculate how mu
 #### Suggestions welcome
 
 We were unable to develop a proper RNN that outcompeted our model, but that doesn't mean that one doesn't exist. The smallest increase in accuracy can profoundly help electric utilities, so if you think there's a structure we haven't considered, feel free to reach out!
+
+#### Same approach can be used for other genric ML models which are employed to predict time series
+
+![grab TS components for Tree based models]("https://towardsdatascience.com/approaching-time-series-with-a-tree-based-model-87c6d1fb6603")
