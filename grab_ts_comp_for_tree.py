@@ -1,5 +1,5 @@
 import pandas as pd
-import numPy as np
+import numpy as np
 
 
 """ SIZE = 60 #we take 2 past months here for each time-series point
@@ -80,7 +80,7 @@ def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
 		else:
 			names += [('var%d(t+%d)' % (j+1, i)) for j in range(n_vars)]
 	# put it all together
-	agg = concat(cols, axis=1)
+	agg = pd.concat(cols, axis=1)
 	agg.columns = names
 	# drop rows with NaN values
 	if dropnan:
