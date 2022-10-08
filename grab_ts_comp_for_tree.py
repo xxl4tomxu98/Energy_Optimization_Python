@@ -1,21 +1,28 @@
 import pandas as pd
 import numpy as np
+import statsmodels.api as sm
 
 
-""" SIZE = 60 #we take 2 past months here for each time-series point
-COLUMNS = ['t{}'.format(x) for x in range(SIZE)] + ['target']
-df_train = []
+data = sm.datasets.macrodata.load_pandas().data
+df = data[["realgdp"]]
+#print(df)
+
+#we take last 60 quarters data for each time-series point, i.e. lag=60
+SIZE = 60 
+COLUMNS = ['t{}'.format(x) for x in range(SIZE)] + ['realgdp']
+list_train = []
 for i in range(SIZE, df.shape[0]):
-    df_train.append(df.loc[i-SIZE:i, 'value'].tolist())
-df_train = pd.DataFrame(df_train, columns=COLUMNS)
+    list_train.append(df.loc[i-SIZE:i, 'realgdp'].tolist())
+df_train = pd.DataFrame(list_train, columns=COLUMNS)
+#print(df_train)
 
 '''With this, we transform time series data line with length N into a data frame (table)
 with (N-M) rows and M columns. Where M is our chosen length of past data points to use 
-for each training sample (60 points = 2 months in the example above)'''
-
+for each training sample (60 points(quarters) = 15 years in the example above)'''
+df_feats = pd.DataFrame()
 df_feats['prev_1'] = df_train.iloc[:,-2] #Here -2 as -1 is a target
 
-for win in [2, 3, 5, 7, 10, 14, 21, 28, 56]:
+for win in [2, 3, 5, 7, 10, 16, 20, 28, 56]:
     tmp = df_train.iloc[:,-1-win:-1]
     #General statistics for base level
     df_feats['mean_prev_{}'.format(win)] = tmp.mean(axis=1)
@@ -25,20 +32,19 @@ for win in [2, 3, 5, 7, 10, 14, 21, 28, 56]:
     df_feats['std_prev_{}'.format(win)] = tmp.std(axis=1)
     #Capturing trend
     df_feats['mean_ewm_prev_{}'.format(win)] = tmp.T.ewm(com=9.5).mean().T.mean(axis=1)
-    df_feats['last_ewm_prev_{}'.format(win)] = tmp.T.ewm(com=9.5).mean().T.iloc[:,-1]
-    
+    df_feats['last_ewm_prev_{}'.format(win)] = tmp.T.ewm(com=9.5).mean().T.iloc[:,-1]    
     df_feats['avg_diff_{}'.format(win)] = (tmp - tmp.shift(1, axis=1)).mean(axis=1)
     df_feats['avg_div_{}'.format(win)] = (tmp / tmp.shift(1, axis=1)).mean(axis=1)
-
-for win in [2, 3, 4, 8]:
-    tmp = df_train.iloc[:,-1-win*7:-1:7] #7 for week
-    #Features for weekly seasonality
-    df_feats['week_mean_prev_{}'.format(win)] = tmp.mean(axis=1)
-    df_feats['week_median_prev_{}'.format(win)] = tmp.median(axis=1)
-    df_feats['week_min_prev_{}'.format(win)] = tmp.min(axis=1)
-    df_feats['week_max_prev_{}'.format(win)] = tmp.max(axis=1)
-    df_feats['week_std_prev_{}'.format(win)] = tmp.std(axis=1)
-
+print(df_feats)
+""" for win in [4, 5, 7, 14]:
+    tmp = df_train.iloc[:,-1-win*4:-1:4] #4 quarters for a year
+    #Features for yearly seasonality
+    df_feats['year_mean_prev_{}'.format(win)] = tmp.mean(axis=1)
+    df_feats['year_median_prev_{}'.format(win)] = tmp.median(axis=1)
+    df_feats['year_min_prev_{}'.format(win)] = tmp.min(axis=1)
+    df_feats['year_max_prev_{}'.format(win)] = tmp.max(axis=1)
+    df_feats['year_std_prev_{}'.format(win)] = tmp.std(axis=1)
+ """
 import lightgbm as lgb
 params = {
     'objective': 'regression',
@@ -47,11 +53,13 @@ params = {
     'learning_rate': 0.06,
     'num_leaves': 64,
     'bagging_fraction': 0.9,
-    'feature_fraction': 0.9
+    'feature_fraction': 0.9,
+	'force_col_wise': True
 }
-x_train = lgb.Dataset(df_feats, df_train['target'])
+x_train = lgb.Dataset(df_feats, df_train['realgdp'])
 model = lgb.train(params, x_train, num_boost_round=500)
-preds = model.predict(df_feats_validation) """
+preds = model.predict(df_feats)
+print(preds)
 
 
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
