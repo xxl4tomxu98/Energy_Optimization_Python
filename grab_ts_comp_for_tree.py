@@ -35,8 +35,8 @@ for win in [2, 3, 5, 7, 10, 16, 20, 28, 56]:
     df_feats['last_ewm_prev_{}'.format(win)] = tmp.T.ewm(com=9.5).mean().T.iloc[:,-1]    
     df_feats['avg_diff_{}'.format(win)] = (tmp - tmp.shift(1, axis=1)).mean(axis=1)
     df_feats['avg_div_{}'.format(win)] = (tmp / tmp.shift(1, axis=1)).mean(axis=1)
-print(df_feats)
-""" for win in [4, 5, 7, 14]:
+
+for win in [4, 5, 7, 14]:
     tmp = df_train.iloc[:,-1-win*4:-1:4] #4 quarters for a year
     #Features for yearly seasonality
     df_feats['year_mean_prev_{}'.format(win)] = tmp.mean(axis=1)
@@ -44,7 +44,7 @@ print(df_feats)
     df_feats['year_min_prev_{}'.format(win)] = tmp.min(axis=1)
     df_feats['year_max_prev_{}'.format(win)] = tmp.max(axis=1)
     df_feats['year_std_prev_{}'.format(win)] = tmp.std(axis=1)
- """
+print(df_feats)
 import lightgbm as lgb
 params = {
     'objective': 'regression',
