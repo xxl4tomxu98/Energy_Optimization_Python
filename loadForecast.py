@@ -42,8 +42,7 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	"""
 	Turn a dataframe of datetime and load data into a dataframe r_df 
 	useful for machine learning. Normalize values.
-	"""
-	
+	"""	
 	if 'dates' not in df.columns:
 		df['dates'] = df.apply(lambda x: dt(int(x['year']), int(x['month']), int(x['day']), int(x['hour'])), axis=1)
 
@@ -58,8 +57,10 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	def _chunks(l, n):
 		#slice df rows by each n periods (24 hours in this case)
 		return [l[i : i + n] for i in range(0, len(l), n)]
+
 	n = np.array([val for val in _chunks(list(r_df["load_n"]), 24) for _ in range(24)])
 	l = ["l" + str(i) for i in range(24)]
+
 	for i, s in enumerate(l):
 		r_df[s] = n[:, i]
 		r_df[s] = r_df[s].shift(hours_prior)
@@ -78,7 +79,6 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	temp_noise = df['tempc'] + np.random.normal(0, noise, df.shape[0])
 	r_df["temp_n"] = zscore(temp_noise)
 	r_df['temp_n^2'] = zscore([x*x for x in temp_noise])
-
 	return r_df
 
 
@@ -117,15 +117,12 @@ def hour_ahead_predictions(all_X, all_y, EPOCHS=10):
 	model.add(Dense(1))
 	
 	optimizer = keras.optimizers.RMSprop(0.0001)
-
 	model.compile(
 		loss="mean_squared_error",
 		optimizer=optimizer,
 		metrics=["mean_absolute_error", "mean_squared_error"],
 	)
-
 	early_stop = keras.callbacks.EarlyStopping(monitor="mean_absolute_error", patience=20)
-
 	history = model.fit(
 		X_train,
 		y_train,
@@ -133,7 +130,6 @@ def hour_ahead_predictions(all_X, all_y, EPOCHS=10):
 		verbose=1,
 		callbacks=[early_stop],
 	)
-
 	predictions = [float(f) for f in model.predict(X_test)]
 	train = [float(f) for f in model.predict(X_train)]
 	accuracy = {
@@ -141,8 +137,7 @@ def hour_ahead_predictions(all_X, all_y, EPOCHS=10):
 		'train': MAPE(train, y_train)
 	}
 	#save the model
-	model.save('./models/hour_ahead_forecastor.h5')	
-
+	model.save('./models/hour_ahead_forecastor.h5')
 	return predictions, accuracy
 
 
@@ -202,6 +197,5 @@ def day_ahead_predictions(all_X, all_y, window, EPOCHS=10):
         'train': MAPE(train, y_train_flatten)
     }
 	# save the model
-    model.save('./models/day_ahead_forecastor.h5')
-    
+    model.save('./models/day_ahead_forecastor.h5')    
     return predictions, accuracy

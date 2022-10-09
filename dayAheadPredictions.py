@@ -68,20 +68,17 @@ if x == 1:
 else:
     daysList.append(lastVals)
 
-
 #recording the true price values for the days we are predicting on
 trueValues = df.iloc[(forecastDays_Index):]
 trueValues = trueValues['LBMP ($/MWHr)'].values
 trueValues = trueValues.reshape(1,numForecastDays)
 dfTrueVals = pd.DataFrame(data= trueValues)
-
 ###############################################################################
 #our differencing to make predictions stationary
 df = -df.diff()
 df = df.drop(df.index[0]) #drop our first row of nans
 df = df.drop(df.index[forecastDays_Index:lastIndex])  # drop the days that we are going to predict out on
 values = df.values  # convert out dataframe to array of numpy values for our calculations
-
 
 # convert series to supervised learning
 def series_to_supervised(data, n_in=1, n_out=1, dropnan=True):
@@ -159,13 +156,14 @@ model.add(Dense(n_features))
 model.compile(loss='mae', optimizer='adam',metrics=['accuracy'])
 
 # fit network
-history = model.fit(train_X, train_y, epochs=numEpochs, batch_size=numBatch, validation_data=(test_X, test_y), verbose=0,
-                        shuffle=False)
+history = model.fit(train_X, train_y, epochs=numEpochs, batch_size=numBatch,
+                    validation_data=(test_X, test_y), verbose=0, shuffle=False)
 
 filename = "model" + str(1)+'.h5'
 model.save(filename)
 model = load_model(filename)
-model.fit(test_X, test_y, epochs = numEpochs, batch_size = numBatch, verbose = 2, shuffle = False) #add state back in, or differencing technique
+#add state back in, or differencing technique
+model.fit(test_X, test_y, epochs = numEpochs, batch_size = numBatch, verbose = 2, shuffle = False)
 model.save(filename)
 
 a = 0 #iterator for changing name of predictions for each stock exported to CSV
@@ -184,8 +182,6 @@ r = 1 #iterator to keep track of lastVals dataframes
 prevDay_array = np.zeros(num)
 
 ###############################################################
-
-
 q = 1 #iterator for lastVals names
 
 for x in range(1,2):
@@ -200,20 +196,15 @@ for x in range(1,2):
     lastVals = lastVals.reshape((1,n_days,n_features))
     #new = test_X[-1].reshape((1,1,n_features))
     #yhat = model.predict(test_X[-1])
-
     #make prediction
     yhat = model.predict(lastVals)
     df_Prediction = pd.DataFrame(data = yhat)
     lastVals = df.iloc[(forecastDays_Index - n_days):(forecastDays_Index)].values
     lastVals = np.vstack((lastVals,yhat))
     prevDay_array2 = int(prevDay_array[c])
-
-
     #our loop within a loop for multiple forecasting days
-
     predictedPrice_array = np.zeros(numForecastDays)
     errorArray = np.zeros(numForecastDays)
-
 
     for x in range(1,numForecastDays+1):
         #get the predictions for change in magnitude of price
@@ -223,7 +214,6 @@ for x in range(1,2):
         # store our previous predicted values for sliding window
         lastVals = np.vstack((lastVals, new_yhat))  # keep stacking our output arrays
         lastVals = lastVals[-n_days:]  # slice so that we get out our
-
         #invert our normalized values
         invertVals = scaler.inverse_transform(new_yhat)
         df_InvertedVals = pd.DataFrame(data=invertVals)
@@ -231,15 +221,11 @@ for x in range(1,2):
         #df_InvertedVals.columns = ['Open', 'High', 'Low', 'Close', 'Adj Close']
         #df_InvertedVals = df_InvertedVals.drop(df_InvertedVals.index[0]) #drop our first row of datafram
         predictedVals = df_InvertedVals['LBMP'].values  # Get out predicted values into a dataframe
-
         if x == 1:
             df_predictedVals = pd.DataFrame(data=predictedVals)
         else:
             df1 = pd.DataFrame(data= predictedVals)
             df_predictedVals = df_predictedVals.append(df1)
-
-
-
     #############################################
     df_predictedVals.reset_index(drop = True)
     trueVals = dfTrueVals.iloc[num2].values
@@ -247,7 +233,6 @@ for x in range(1,2):
     #create an empty array to fill with rmse for each data point (to record how error is as time goes on)
     predictedVals = df_predictedVals.values #create an array of our predicted stock price changes
     df_predictedVals.reset_index(drop=True)
-
     i = 0
     w = 0
     for x in range(1,len(predictedVals)+1):
@@ -257,17 +242,13 @@ for x in range(1,2):
             #predictedPrice_array[i] = prevDay_array[i] + predictedVals[0]
             predictedPrice_array[i] = prevDay_array2 + predictedVals[0]
             errorArray[i] = ((trueVals[i]- predictedPrice_array[i])/trueVals[i])*100
-
         else:
             #This says we keep adding price magnitude to the next day
             predictedPrice_array[i] = predictedPrice_array[i-1] + predictedVals[i]
             errorArray[i] = ((trueVals[i] - predictedPrice_array[i]) / trueVals[i]) * 100
-
-
         #calculating RMSE:
         #rmse_array[m] = sqrt(mean_squared_error(trueVals, predictedPrice_array))
         i += 1
-
     #reshape our output arrays to be the same dimensions
     predictedPrice_array = predictedPrice_array.reshape(forecast_out,1)
     errorArray = errorArray.reshape(forecast_out,1)
@@ -278,9 +259,7 @@ for x in range(1,2):
     df_Output = pd.DataFrame(data= allVals)
     df_Output.columns = ['True Price', 'Predicted Price','Error']
     df_Output.to_csv('Output.csv', sep=',')
-
     w += 1
-
     del model
 
 
