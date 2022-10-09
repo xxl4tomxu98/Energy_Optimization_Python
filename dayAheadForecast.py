@@ -54,9 +54,7 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
         # aggregate time columns togther into a datetime variable for easy access
 	    df['dates'] = df.apply(lambda x: dt(int(x['year']), int(x['month']),
                                 int(x['day']), int(x['hour'])), axis=1)
-
     r_df = pd.DataFrame()
-	
 	# LOAD and Normalize, column load_prev_n represents 24 hr before load
     r_df["load_n"] = zscore(df["load"])
     r_df["load_prev_n"] = r_df["load_n"].shift(hours_prior)
@@ -66,31 +64,29 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
     def _chunks(l, n):
 		#slice df rows by each n periods
 	    return [l[i : i + n] for i in range(0, len(l), n)]
+
     n = np.array([val for val in _chunks(list(r_df["load_n"]), hours_prior)
                  for _ in range(hours_prior)])
+                 
     l = ["l" + str(i) for i in range(hours_prior)]
     for i, s in enumerate(l):
 	    r_df[s] = n[:, i]
 	    r_df[s] = r_df[s].shift(hours_prior)
 	    r_df[s] = r_df[s].bfill()
-    r_df.drop(['load_n'], axis=1, inplace=True)
-	
+    r_df.drop(['load_n'], axis=1, inplace=True)	
     # DATE
     r_df["years_n"] = zscore(df["dates"].dt.year)
     r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.hour, prefix='hour')], axis=1)
     r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.dayofweek, prefix='day')], axis=1)
     r_df = pd.concat([r_df, pd.get_dummies(df.dates.dt.month, prefix='month')], axis=1)
-
     official_holidays = ["New Year's Day", "Memorial Day", "Independence Day", "Labor Day",
                          "Thanksgiving", "Christmas Day"]
     for holiday in official_holidays:
 	    r_df[holiday] = isHoliday(holiday, df)
-
     # randomize TEMP to accomodate normal noisy fluctuations
     temp_noise = df['tempc'] + np.random.normal(0, noise, df.shape[0])
     r_df["temp_n"] = zscore(temp_noise)
     r_df['temp_n^2'] = zscore([x*x for x in temp_noise])
-
     return r_df
 
 
@@ -136,6 +132,7 @@ def day_ahead_predictions(all_X, all_y, window, EPOCHS=10):
 
     callbacks = [ReduceLROnPlateau(monitor='mape', patience=5, cooldown=0),
                  EarlyStopping(monitor='accuracy', min_delta=1e-4, patience=5)]
+
     history = model.fit(
         X_train,
         y_train,
