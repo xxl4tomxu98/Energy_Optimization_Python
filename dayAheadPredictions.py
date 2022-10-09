@@ -162,6 +162,7 @@ history = model.fit(train_X, train_y, epochs=numEpochs, batch_size=numBatch,
 filename = "model" + str(1)+'.h5'
 model.save(filename)
 model = load_model(filename)
+
 #add state back in, or differencing technique
 model.fit(test_X, test_y, epochs = numEpochs, batch_size = numBatch, verbose = 2, shuffle = False)
 model.save(filename)
@@ -169,7 +170,6 @@ model.save(filename)
 a = 0 #iterator for changing name of predictions for each stock exported to CSV
 y = 1#iterator for dfName only
 c = 0 #iterator for prevDay array
-
 
 #########################################################################################################
 
