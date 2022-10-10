@@ -58,9 +58,9 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 		#slice df rows by each n periods (24 hours in this case)
 		return [l[i : i + n] for i in range(0, len(l), n)]
 
-	n = np.array([val for val in _chunks(list(r_df["load_n"]), 24) for _ in range(24)])
-	l = ["l" + str(i) for i in range(24)]
-
+	n = np.array([val for val in _chunks(list(r_df["load_n"]), hours_prior) for _ in range(hours_prior)])
+	l = ["l" + str(i) for i in range(hours_prior)]
+	#print("n ", n)
 	for i, s in enumerate(l):
 		r_df[s] = n[:, i]
 		r_df[s] = r_df[s].shift(hours_prior)

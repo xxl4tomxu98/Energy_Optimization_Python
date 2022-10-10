@@ -62,12 +62,12 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 
     # LOAD PREV
     def _chunks(l, n):
-		#slice df rows by each n periods
+		#slice df rows by each n periods l[0,24], l[24,48], ...
 	    return [l[i : i + n] for i in range(0, len(l), n)]
 
     n = np.array([val for val in _chunks(list(r_df["load_n"]), hours_prior)
                  for _ in range(hours_prior)])
-                 
+          
     l = ["l" + str(i) for i in range(hours_prior)]
     for i, s in enumerate(l):
 	    r_df[s] = n[:, i]
