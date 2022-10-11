@@ -1,7 +1,6 @@
 """
 Neural net implementation of electric load forecasting.
 """
-
 import pickle
 import numpy as np
 import pandas as pd
@@ -46,18 +45,18 @@ def makeUsefulDf(df, noise=2.5, hours_prior=24):
 	if 'dates' not in df.columns:
 		df['dates'] = df.apply(lambda x: dt(int(x['year']), int(x['month']), int(x['day']), int(x['hour'])), axis=1)
 
-	r_df = pd.DataFrame()
-	
+	r_df = pd.DataFrame()	
 	# LOAD and Normalize, column load_prev_n represents 24 hr before load
 	r_df["load_n"] = zscore(df["load"])
 	r_df["load_prev_n"] = r_df["load_n"].shift(hours_prior)
 	r_df["load_prev_n"].bfill(inplace=True)	
 	# LOAD PREV
 	def _chunks(l, n):
-		#slice df rows by each n periods (24 hours in this case)
+		#slice df rows by each n periods (24 hours in this case) and overlay in a matrix
 		return [l[i : i + n] for i in range(0, len(l), n)]
 	n = np.array([val for val in _chunks(list(r_df["load_n"]), hours_prior) for _ in range(hours_prior)])
-	l = ["l" + str(i) for i in range(hours_prior)]	
+	l = ["l" + str(i) for i in range(hours_prior)]
+	# taking l[0:24], l[1:25], ...l[len(r_df)-24:len(r_df)] and take shifts
 	for i, s in enumerate(l):
 		r_df[s] = n[:, i]
 		r_df[s] = r_df[s].shift(hours_prior)
